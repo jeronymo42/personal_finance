@@ -1,16 +1,20 @@
-import json, sys
+import json
+import sys
 from datetime import datetime
 
-finance_data = {'balance':0,
-                'transactions':{}}
+finance_data = {'Дата': '',
+                'Категория': 'Доход',
+                'Сумма': 0,
+                'Описание': ''
+                }
 
 main_menu = ['Показать баланс', 'Добавить операцию', 'Выход']
 
 
-def write_data(data:dict=finance_data) -> None:
+def write_data(data: dict = finance_data) -> None:
     '''Функция записывает данные в файл. На входе ожидается словарь с данными.'''
-    with open("data.txt", 'w') as file:
-        file.write(str(json.dumps(data)))
+    with open("data.txt", 'a') as file:
+        file.write(str(json.dumps(data))+'\n')
 
 
 def load_data() -> dict:
@@ -28,9 +32,23 @@ def load_data() -> dict:
 
 def show_balance() -> None:
     '''Выводи баланс на экран'''
-    finance_data = load_data()
-    color = '\033[92m' if finance_data['balance'] > 0 else '\033[91m'
-    print(f"Баланс: {color}{finance_data['balance']}$\033[00m")
+    income: float = 0
+    expances: float = 0
+    with open("data.txt", 'r') as data:
+        current_line: str = data.readline()
+        while current_line:
+            transaction = json.loads(current_line)
+            if transaction['Категория'] == 'Доход':
+                income += transaction['Сумма']
+            else:
+                expances += transaction['Сумма']
+            current_line = data.readline()
+    red = '\033[91m'
+    green = '\033[92m'
+    balance = income - expances
+    print(f"Баланс: {green if balance > 0 else red}{balance}$\033[00m")
+    print(f'Доходы: {green}{income}$\033[00m;')
+    print(f'Расходы: {red}{expances}$\033[00m;')
 
 
 def wrong_command() -> None:
@@ -41,24 +59,42 @@ def wrong_command() -> None:
 # Функция для добавления транзакцияй
 def add_transaction() -> None:
     '''Данная функция ничего не принимает, но ожидает ввода от пользователя, записывает произведенные транзакции'''
+    finance_data = {}
+    while True:
+        date: str = input('Введите дату операции в формате Год-Месяц-День\n')
+        if date.count('-') != 2:
+            wrong_command()
+            continue
+        finance_data['Дата'] = date
+        break
 
     while True:
-        input_data = input('Введите сумму перации (c - для расходов) и описание операции через ";"\n')
-        if ';' not in input_data:
+        category: str = input('Введите категорию операции (Доход/Расход)\n')
+        category = category.strip().capitalize()
+        if category != 'Доход' and category != 'Расход':
             wrong_command()
-        else:
-            transaction_sum, transaction_desctiption = input_data.split(';')
-            transaction_sum = round(float(transaction_sum), 2)
-            finance_data = load_data()
-            finance_data['balance'] += transaction_sum
-            finance_data['transactions'][str(datetime.now())] = [transaction_sum, transaction_desctiption.strip()]
-            write_data(finance_data)
-            print(f'Внесена следующая операция: "{transaction_desctiption}"')
-            show_balance()
-            return
+            continue
+        finance_data['Категория'] = category
+        break
+    
+    while True:
+        operation_sum: str = input('Введите сумму операции\n')
+        try:
+            operation_sum = round(float(operation_sum), 2)
+        except:
+            wrong_command()
+            continue
+        finance_data['Сумма'] = operation_sum
+        break
+    
+
+    decription: str = input('Введите описание операции\n')
+    finance_data['Описание'] = decription
+    write_data(finance_data)
 
 
-main_menu_functions = {'1': show_balance, '2': add_transaction, '3': sys.exit}
+
+main_menu_functions:dict = {'1': show_balance, '2': add_transaction, '3': sys.exit}
 
 # Главный цикл
 while True:
@@ -69,4 +105,3 @@ while True:
         main_menu_functions[command]()
     else:
         wrong_command()
-
