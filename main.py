@@ -1,5 +1,6 @@
 import json
 import sys
+import re
 from datetime import datetime
 
 finance_data = {'Дата': '',
@@ -8,7 +9,7 @@ finance_data = {'Дата': '',
                 'Описание': ''
                 }
 
-main_menu = ['Показать баланс', 'Добавить операцию', 'Выход']
+main_menu = ['Показать баланс', 'Добавить операцию', 'Редактирование записи', 'Поиск записей','Выход']
 
 
 def write_data(data: dict = finance_data) -> None:
@@ -62,7 +63,8 @@ def add_transaction() -> None:
     finance_data = {}
     while True:
         date: str = input('Введите дату операции в формате Год-Месяц-День\n')
-        if date.count('-') != 2:
+        match = re.match(r'[1,2]\d{3}-\d{2}-\d{2}', date)
+        if not match:
             wrong_command()
             continue
         finance_data['Дата'] = date
@@ -92,9 +94,64 @@ def add_transaction() -> None:
     finance_data['Описание'] = decription
     write_data(finance_data)
 
+def search_data(key: str, parameter: str) -> None:
+    try:
+        with open("data.txt", 'r') as data:
+            current_line = data.readline()
+            while current_line:
+                result = json.loads(current_line)
+                if result.get(key) == parameter:
+                    print(result)
+                    current_line
+                return result
+    except Exception as e:
+        print(f'Произошла ошибка: {e}')
+
+def search_transactions() -> None:
+    key: str = ''
+    parameter: str = ''
+    answer: str = input('Ищем транзакцию по дате? (y/n)\n')
+    if answer.lower() == 'y':
+        while True:
+            date = input('Введите дату операции в формате Год-Месяц-День\n')
+            match = re.match(r'[1,2]\d{3}-\d{2}-\d{2}', date)
+            if match:
+                key = date
+                parameter = 'Дата'
+                print('OK')
+                return
+            else:
+                wrong_command()
+                
+    answer: str = input('Ищем транзакцию по категории? (y/n)\n')
+    if answer.lower() == 'y':
+        while True:
+            category = input('Введите категорию операции (Доход/Расход):\n')
+            category = category.strip().capitalize()
+            if category == 'Доход' or category == 'Расход':
+                key = category
+                parameter = 'Категория'
+                print('OK')
+                return
+            else:
+                wrong_command()
 
 
-main_menu_functions:dict = {'1': show_balance, '2': add_transaction, '3': sys.exit}
+    answer: str = input('Ищем транзакцию по сумме? (y/n)\n')
+    if answer.lower() == 'y':
+        while True:
+            transaction_sum = input('Введите сумму искомой транзакции:\n')
+            match = re.match(r'\d+\.?\d*', transaction_sum)
+            if match:
+                key = transaction_sum
+                parameter = 'Сумма'
+                print('OK')
+                return
+            else:
+                wrong_command()
+
+
+main_menu_functions:dict = {'1': show_balance, '2': add_transaction, '3':'', '4':search_transactions ,'5': sys.exit}
 
 # Главный цикл
 while True:
